@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #fafaf8;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f1f1ee;
+  --color-fg: #1a1d1c;
+  --color-fg-muted: #6b716f;
+  --color-border: rgba(0, 0, 0, 0.10);
+  --color-border-soft: rgba(0, 0, 0, 0.06);
+
+  --color-accent: #1d4ed8;
+  --color-accent-soft: #dbeafe;
+  --color-accent-deep: #0b2a6b;
+  --color-on-accent: #ffffff;
+  --color-gold: #f4b400;
+
+  --color-plate-bg: #f1f1ee;
+  --color-plate-border: rgba(0, 0, 0, 0.08);
+  --color-thumb-bg: #eeeeea;
+
+  --color-status-diagnostic: #d97706;
+  --color-status-en-cours: #0f766e;
+  --color-status-en-attente-pieces: #737373;
+  --color-status-pret: #16a34a;
+
+  --color-danger: #dc2626;
+
+  --color-toast-bg: #1a1d1c;
+  --color-toast-fg: #fafaf8;
+
+  --shadow-accent: 0 4px 14px rgba(29, 78, 216, 0.35);
+  --shadow-accent-soft: 0 2px 8px -2px rgba(29, 78, 216, 0.35);
+  --shadow-accent-fab: 0 6px 20px rgba(29, 78, 216, 0.35);
+  --shadow-card: 0 4px 12px -4px rgba(29, 78, 216, 0.35);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Consolas, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus {
+  outline: none;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
