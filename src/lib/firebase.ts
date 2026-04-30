@@ -17,8 +17,13 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
+// experimentalAutoDetectLongPolling: required for Firefox Android and some
+// mobile networks / corporate proxies that block Firestore's default
+// streaming WebChannel. Without it the listener channel fails CORS and the
+// app silently runs offline-only. See firebase-js-sdk#1674.
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),
   }),
+  experimentalAutoDetectLongPolling: true,
 })

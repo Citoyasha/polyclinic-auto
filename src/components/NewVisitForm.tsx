@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Check, Loader2 } from 'lucide-react'
 import { FieldLabel } from '@/components/Eyebrow'
+import { PlateInput, isValidTunisianPlate } from '@/components/PlateInput'
 import { normalizePhone, normalizePlate } from '@/lib/normalize'
 import {
   createVisit,
@@ -44,7 +45,7 @@ export interface NewVisitFormProps {
 
 export function NewVisitForm({ onCancel, onCreated }: NewVisitFormProps) {
   const navigate = useNavigate()
-  const { register, watch, setValue, getValues, handleSubmit, reset, setFocus } =
+  const { register, watch, setValue, getValues, handleSubmit, reset, control } =
     useForm<FormValues>({ defaultValues: DEFAULTS })
   const [existingCar, setExistingCar] = useState<Car | null>(null)
   const [existingCustomer, setExistingCustomer] = useState<Customer | null>(null)
@@ -57,9 +58,7 @@ export function NewVisitForm({ onCancel, onCreated }: NewVisitFormProps) {
   const name = watch('name')
   const summary = watch('summary')
 
-  useEffect(() => {
-    setFocus('plate')
-  }, [setFocus])
+  // PlateInput handles its own autofocus on mount.
 
   const showPhone = plate.trim().length > 0 && !existingCar
   const showNewCustomerName =
@@ -71,7 +70,7 @@ export function NewVisitForm({ onCancel, onCreated }: NewVisitFormProps) {
 
   const onPlateBlur = async () => {
     const raw = getValues('plate').trim()
-    if (!raw) return
+    if (!raw || !isValidTunisianPlate(raw)) return
     const canonical = normalizePlate(raw)
     setPlateChecking(true)
     try {
@@ -125,9 +124,13 @@ export function NewVisitForm({ onCancel, onCreated }: NewVisitFormProps) {
   }
 
   const canSubmit =
-    plate.trim().length > 0 && summary.trim().length > 0 && !submitting
+    isValidTunisianPlate(plate) && summary.trim().length > 0 && !submitting
 
   const onSubmit = handleSubmit(async (values) => {
+    if (!isValidTunisianPlate(values.plate)) {
+      toast.error('Plaque incomplète : 3 chiffres + TUN + 4 chiffres.')
+      return
+    }
     const canonicalPlate = normalizePlate(values.plate)
     if (!canonicalPlate) {
       toast.error('Plaque invalide.')
@@ -195,13 +198,20 @@ export function NewVisitForm({ onCancel, onCreated }: NewVisitFormProps) {
     <form onSubmit={onSubmit} className="px-6 pb-6 pt-5">
       <Field>
         <FieldLabel>Plaque</FieldLabel>
-        <input
-          {...register('plate', { onBlur: onPlateBlur })}
-          autoComplete="off"
-          autoCapitalize="characters"
-          dir="auto"
-          placeholder="123 TUN 4567"
-          className="w-full rounded-[10px] border border-border bg-surface px-3.5 py-3 font-mono text-[20px] font-semibold tracking-[1px] text-fg outline-none focus:border-accent"
+        <Controller
+          name="plate"
+          control={control}
+          render={({ field }) => (
+            <PlateInput
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={() => {
+                field.onBlur()
+                onPlateBlur()
+              }}
+              autoFocus
+            />
+          )}
         />
         {plateChecking && <Hint>Recherche…</Hint>}
         {existingCar && (

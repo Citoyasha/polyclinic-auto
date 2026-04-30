@@ -34,5 +34,12 @@ service cloud.firestore {
     match /inventoryMovements/{movementId} {
       allow read, write: if isAuth();
     }
+
+    // /users mirrors Firebase Auth profiles for the assignee picker.
+    // Open to any authenticated user today; tighten to
+    // `request.auth.uid == uid` for write when per-user roles arrive.
+    match /users/{uid} {
+      allow read, write: if isAuth();
+    }
   }
 }

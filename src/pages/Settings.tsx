@@ -1,14 +1,17 @@
-import { ArrowLeft } from 'lucide-react'
+import { useState } from 'react'
+import { ArrowLeft, Edit2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import { useAuth } from '@/hooks/useAuth'
 import { Avatar, deriveInitials } from '@/components/Avatar'
+import { EditProfileSheet } from '@/components/EditProfileSheet'
 
 export default function Settings() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const initials = deriveInitials(user?.displayName ?? null, user?.email ?? null)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   return (
     <div className="flex h-full flex-col bg-bg">
@@ -25,7 +28,12 @@ export default function Settings() {
         <div className="w-11" />
       </div>
       <div className="flex-1 overflow-auto p-5">
-        <div className="mb-5 flex items-center gap-3.5 rounded-[14px] border border-border bg-surface p-[18px]">
+        <button
+          type="button"
+          onClick={() => setProfileOpen(true)}
+          className="mb-5 flex w-full items-center gap-3.5 rounded-[14px] border border-border bg-surface p-[18px] text-left"
+          aria-label="Modifier mon profil"
+        >
           <Avatar initials={initials} size={48} variant="accent" />
           <div className="min-w-0 flex-1">
             <div className="truncate text-[15px] font-semibold">
@@ -35,7 +43,8 @@ export default function Settings() {
               {user?.email ?? '—'}
             </div>
           </div>
-        </div>
+          <Edit2 size={18} strokeWidth={1.7} className="flex-none text-fg-muted" />
+        </button>
 
         <SettingRow label="Version de l'application" value="1.0.0" muted />
 
@@ -47,6 +56,12 @@ export default function Settings() {
           Déconnexion
         </button>
       </div>
+
+      <EditProfileSheet
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        user={user}
+      />
     </div>
   )
 }

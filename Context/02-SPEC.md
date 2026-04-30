@@ -2,8 +2,7 @@
 
 This document is the implementation brief. It assumes the reader is starting from zero and accompanies `01-DESIGN.md`. Read both before writing code.
 
-Fetch this design file: https://api.anthropic.com/v1/design/h/olYP9bwJyu6mQIw3r4gtCQ?open_file=Garage+ERP.html
-
+Fetch this design folder ../Design
 
 ## 1. Tech Stack (locked)
 
@@ -144,8 +143,11 @@ Document ID is the canonical plate (e.g., `123TUN4567`).
 {
   carId: string;           // plate (canonical)
   customerId: string;      // phone (canonical)
-  status?: 'diagnostic' | 'en_cours' | 'en_attente_pieces' | 'pret' | null;
+  status?: 'diagnostic' | 'en_cours' | 'en_attente_pieces' | 'pret' | 'termine' | null;
   summary: string;         // manual free-text
+  // Denormalization of `status === 'termine'`. Maintained automatically
+  // by setVisitStatus so the home query can use the existing index.
+  // Never write isClosed or closedAt directly — set status to 'termine'.
   isClosed: boolean;
   arrivedAt: Timestamp;
   closedAt?: Timestamp | null;
@@ -384,14 +386,27 @@ This makes writes optimistic and reads cached automatically.
 
 ### 9.4 Visits home query
 
+The home screen has two modes driven by the selected filter chip:
+
 ```typescript
+// Active visits — used by Tous + the four mid-flow status chips
 query(
   collection(db, 'visits'),
   where('isClosed', '==', false),
   orderBy('updatedAt', 'desc'),
   limit(50)
 );
+
+// Historique chip — terminated visits, most recently closed first
+query(
+  collection(db, 'visits'),
+  where('isClosed', '==', true),
+  orderBy('updatedAt', 'desc'),
+  limit(50)
+);
 ```
+
+Both queries reuse the same composite index `(isClosed, updatedAt desc)`. The four status chips (Diagnostic / En cours / Pièces / Prêt) further filter the active result set client-side; they never include `Terminé` visits.
 
 Update `updatedAt` whenever a visit, its tasks, line items, or photos change. The simplest path: every mutation that affects a visit also bumps `visits/{id}.updatedAt`. Use `serverTimestamp()`.
 
@@ -466,7 +481,7 @@ Refresh the indexes when the underlying collections change (use a Firestore snap
 
 ### 9.9 Status chip values
 
-Stored as enum strings: `'diagnostic' | 'en_cours' | 'en_attente_pieces' | 'pret' | null`. Map to display labels in a constant:
+Stored as enum strings: `'diagnostic' | 'en_cours' | 'en_attente_pieces' | 'pret' | 'termine' | null`. Map to display labels in a constant:
 
 ```typescript
 export const STATUS_LABELS: Record<NonNullable<VisitStatus>, string> = {
@@ -474,8 +489,13 @@ export const STATUS_LABELS: Record<NonNullable<VisitStatus>, string> = {
   en_cours: 'En cours',
   en_attente_pieces: 'En attente pièces',
   pret: 'Prêt',
+  termine: 'Terminé',
 };
 ```
+
+`'termine'` is the terminal status. **There is no separate "Terminer la visite" button.** A visit is closed by setting its status to `'termine'` from the same status sheet used for every other status. The `setVisitStatus` mutation denormalizes this to `isClosed: true` and stamps `closedAt` (and inversely clears them when the user picks any other status, so the visit is restored to the active list). `closedAt` therefore reflects the *most recent* time the visit transitioned into `'termine'`.
+
+Rationale: a single source of truth (status) keeps the model and the UI honest. The user can correct mistakes by re-picking a status from the sheet, with no destructive-feeling confirmation prompt to traverse.
 
 ### 9.10 Internationalization
 
@@ -562,7 +582,7 @@ Build in this order to get the team using the app as fast as possible:
 6. Car detail page — line items (CRUD) + total calculation.
 7. Status chip + filters on home.
 8. Photos upload + Avant/Après tabs.
-9. Close/reopen visit + history view of closed visits per car.
+9. `Terminé` status + `Historique` filter chip on home (closing a visit is a status change, not a separate action).
 10. Receipt screen + PDF export.
 11. Customers tab + customer page.
 12. Stock tab + inventory + movements.
@@ -580,3 +600,26 @@ Each step ends in a demoable state. After step 6 the team can already start usin
 - **Plate collision** (two cars with the same normalized plate, e.g., one with Arabic original, one with Latin original) → second creation overwrites. Mitigation: when creating a car, check for existing doc first; if found and `rawPlate` differs, prompt the user "Cette plaque existe déjà comme '123 TUN 4567'. Continuer ?"
 - **User accidentally taps Terminer la visite** → mitigated by confirmation sheet and Réouvrir option.
 - **Free tier exhaustion** → very unlikely at this scale. Firebase free tier (Spark plan) gives 50K Firestore reads/day, 20K writes/day, 1GB storage, 5GB Storage egress/month. At 80 cars/month with 10 photos each at 200KB, that's 160MB/month — comfortably under all limits.
+
+## 15. Build Progress (snapshot 2026-05-01)
+
+### Shipped
+
+- **1–7. Project skeleton, auth, home, new visit, car detail (top half)** — Vite + React 19 + TS strict + Tailwind v4 + shadcn/ui + Firebase. Routes guarded by `ProtectedRoute`. Login with reset-email flow.
+- **6, 8, 9. Car detail completion** — line items, photos via Cloudinary (compress + upload pipeline at `src/lib/photoUpload.ts`), `Terminé` status replaces the old `isClosed` boolean as a status value, banner on terminated visits, stays editable, `Historique` filter chip on home.
+- **10. Receipt + PDF** — `/voiture/:plate/recu` and `/visite/:visitId/recu`. pdfmake template at `src/lib/pdf.ts` is lazy-loaded (separate chunk, only fetched on first download). Optional Web Share API for the PDF.
+- **11. Customers tab + Customer detail** — alphabetical groups (French + Arabic), search, FAB → new customer sheet, customer page with cars + Historique des visites, edit name/notes via sheet.
+- **12. Stock + Item detail + movements** — `Tous` / `Pièces` / `Fluides` filters, optional unit field with type-derived defaults (`u.` / `L`), atomic stock-adjustment batch (item + movement), 50-most-recent movement log per item, low-stock chip + amber count below threshold.
+- **13. Global search** — Fuse.js across `cars` (`plate`/`rawPlate`/`make`/`model`) and `customers` (`name`/`phone`/`rawPhone`), grouped Voitures + Clients results, max 10 per group. Real-time index via the `useAllCars` and `useCustomers` hooks.
+- **Profile editing** — Firebase Auth `displayName` editable from Settings via a bottom sheet, mirrored to `users/{uid}` on every auth state change. Seeds the data the upcoming assignee picker will read.
+- **Car detail 3-dot menu** — Modifier la voiture (edit plate + make/model/color/year, with full Firestore migration when the canonical plate changes), Modifier le client (reuses `EditCustomerSheet`), Voir le client (navigates to `/client/:phone`), Supprimer la voiture (cascade-deletes the car, all its visits, and every visit's tasks/lineItems/photos subdocs in a single batched write — Cloudinary assets intentionally orphaned per the existing TODO).
+- **Tunisian plate input** — strict 3-digit + circular flag badge + 4-digit input (`src/components/PlateInput.tsx`) used in NewVisitForm and EditCarSheet; auto-advance, paste-spread, numeric IME.
+- **Mobile UX hardening** — `experimentalAutoDetectLongPolling: true` on Firestore (Firefox Android transport), bottom-sheet keyboard inset via Visual Viewport API (`src/components/ui/sheet.tsx`), `crypto.randomUUID` replaced with non-secure ID generator for HTTP dev hosts, FAB lifted above BottomNav, photo upload timeouts surface real errors instead of silent hangs.
+
+### Pending
+
+- **Visit author + assignee (mechanic picker)** — sources the `users/{uid}` collection populated by this iteration's auth mirror.
+- **14. PWA manifest + service worker + install prompt.**
+- **WhatsApp auto-notify** when status flips to `pret`.
+- **Stats dashboard** for jobs, cars, parts movement.
+- **Cloudinary asset cleanup** for deleted photos (needs a Cloud Function — see TODO at `src/lib/mutations.ts`).

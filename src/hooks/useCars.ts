@@ -13,15 +13,18 @@ import type { Visit } from '@/types'
 
 export type VisitWithId = Visit & { id: string }
 
-export function useCars() {
+export type VisitsMode = 'active' | 'history'
+
+export function useCars(mode: VisitsMode = 'active') {
   const [visits, setVisits] = useState<VisitWithId[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<FirestoreError | null>(null)
 
   useEffect(() => {
+    setLoading(true)
     const q = query(
       collection(db, 'visits'),
-      where('isClosed', '==', false),
+      where('isClosed', '==', mode === 'history'),
       orderBy('updatedAt', 'desc'),
       limit(50),
     )
@@ -43,7 +46,7 @@ export function useCars() {
       },
     )
     return unsub
-  }, [])
+  }, [mode])
 
   return { visits, loading, error }
 }

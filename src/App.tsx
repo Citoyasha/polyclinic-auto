@@ -7,7 +7,10 @@ import Home from '@/pages/Home'
 import NewVisit from '@/pages/NewVisit'
 import CarDetail from '@/pages/CarDetail'
 import Customers from '@/pages/Customers'
+import Customer from '@/pages/Customer'
+import Receipt from '@/pages/Receipt'
 import Stock from '@/pages/Stock'
+import StockItem from '@/pages/StockItem'
 import Search from '@/pages/Search'
 import Settings from '@/pages/Settings'
 
@@ -51,6 +54,22 @@ export default function App() {
             }
           />
           <Route
+            path="/voiture/:plate/recu"
+            element={
+              <ProtectedRoute>
+                <Receipt />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/visite/:visitId/recu"
+            element={
+              <ProtectedRoute>
+                <Receipt />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/clients"
             element={
               <ProtectedRoute>
@@ -59,10 +78,26 @@ export default function App() {
             }
           />
           <Route
+            path="/client/:phone"
+            element={
+              <ProtectedRoute>
+                <Customer />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/stock"
             element={
               <ProtectedRoute>
                 <Stock />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/stock/:itemId"
+            element={
+              <ProtectedRoute>
+                <StockItem />
               </ProtectedRoute>
             }
           />

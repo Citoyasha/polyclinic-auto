@@ -24,7 +24,7 @@ Constraints driving the design:
 2. **Familiar Android patterns.** Material Design 3 components. FAB bottom-right for primary action. Pull-to-refresh. Bottom sheets instead of new pages for quick edits. Swipe actions on list rows. Avoid heavy iOS aesthetics — they feel foreign on Android.
 3. **Auto-save everywhere.** No "Enregistrer" buttons on text inputs. Type → tap away → saved. Like Google Keep. Save buttons are an opportunity to lose data.
 4. **Optimistic UI.** Writes update the screen instantly, sync in background. Firestore's offline persistence handles intermittent connectivity transparently.
-5. **Confirmation only for destructive or final actions.** Closing a visit, deleting a car, deleting a customer. Everything else is reversible enough to skip the prompt.
+5. **Confirmation only for destructive or hard-to-reverse actions.** Deleting a car, deleting a customer, deleting an inventory item. *Closing a visit is **not** destructive* — it's a status change to `Terminé` and is reversed by picking any other status. So no confirmation prompt for it. Everything else is reversible enough to skip the prompt.
 6. **Instant fuzzy search.** One search bar, matches across plates, phone numbers, customer names. No filter dropdowns. Use Fuse.js or similar.
 7. **Slow repairs are first-class citizens.** A car sitting for 3 months should not be visually flagged as a problem, surfaced as an alert, or penalized in any sort. Treat it identically to a 2-day repair.
 
@@ -72,7 +72,7 @@ A **Compte / Settings** screen is reachable from a profile icon in the top-right
 
 - Top bar: app title "Garage" left, profile icon right.
 - Search bar below (sticky): "Rechercher plaque, client, téléphone…"
-- Filter chips row below search bar (horizontal scroll if needed): `Tous` (default selected), `Diagnostic`, `En cours`, `En attente pièces`, `Prêt`. Tapping a chip filters the list. Status chips are optional metadata; cars without a status set still appear under `Tous` and can be filtered out by selecting any specific chip.
+- Filter chips row below search bar (horizontal scroll if needed): `Tous` (default selected), `Diagnostic`, `En cours`, `En attente pièces`, `Prêt`, `Historique`. Tapping a chip filters the list. Status chips are optional metadata; cars without a status set still appear under `Tous` and can be filtered out by selecting any specific chip. `Tous` and the four mid-flow status chips show only **active** visits (status ≠ `Terminé`); `Historique` shows only **terminated** visits, sorted most-recently-closed first.
 - List of car rows, sorted by most recently updated (descending). Like WhatsApp's chat list.
 - FAB bottom-right: large "+" icon, label "Nouvelle visite" (icon-only on small screens).
 
@@ -95,7 +95,7 @@ A **Compte / Settings** screen is reachable from a profile icon in the top-right
 **Interactions:**
 
 - Tap row → Car detail page.
-- Swipe left on row → reveal quick action: "Terminer la visite" (with confirmation).
+- Swipe left on row → reveal quick action: "Marquer Terminé" (sets status to `Terminé`, no confirmation — the same as picking it from the status sheet on the detail page; the visit moves to `Historique`).
 - Pull down → refresh.
 - Tap FAB → New Visit flow.
 - Tap search bar → expands to full-screen search overlay (see 5.10).
@@ -139,7 +139,7 @@ On submit:
 - Overflow menu (top-right): "Modifier la voiture", "Voir le client", "Voir l'historique", "Supprimer la voiture" (with confirmation).
 
 **Status chip row:**
-- Inline editable chip showing current status. Tap → bottom sheet with options: Aucun, Diagnostic, En cours, En attente pièces, Prêt. Selecting one updates immediately.
+- Inline editable chip showing current status. Tap → bottom sheet with options: Aucun, Diagnostic, En cours, En attente pièces, Prêt, Terminé. Selecting one updates immediately. Picking `Terminé` flips the visit to closed (it disappears from `Tous` and shows up under `Historique`); picking any other status restores it.
 
 **Résumé section:**
 - Editable multiline text. Auto-saves on blur. Placeholder: "Décrivez ce qu'il faut faire ou ce qui a été fait…"
@@ -168,12 +168,13 @@ On submit:
 - Sum of task prices + sum of line item totals. Updates live.
 - Format: "Total: 380 TND".
 
-**Action buttons (bottom of page, above the sticky total):**
-- `Voir le reçu` (secondary) — opens the receipt screen for the current visit (works even before closing).
-- `Terminer la visite` (primary, accent color) — triggers a confirmation bottom sheet: "Terminer cette visite ? Le reçu sera enregistré et la voiture sortira de la liste active." Buttons: `Annuler`, `Confirmer`. On confirm, set `isClosed=true` and `closedAt=now`, navigate back to home.
+**Action button (bottom of page, above the sticky total):**
+- `Voir le reçu` (full-width secondary) — opens the receipt screen for the current visit. Works at any status, including `Terminé`. **There is no "Terminer la visite" button.** A visit is closed by setting its status to `Terminé` from the status sheet at the top of the page.
 
-**Behavior for closed visits:**
-- If the visit is already closed (viewing from history), all editable fields become read-only. A banner at the top says "Visite terminée le 12 mars 2026". A single button `Réouvrir la visite` is shown (with confirmation) — reopening sets `isClosed=false`, restoring edit mode and adding the car back to the home list.
+**Behavior for terminated visits (status = `Terminé`):**
+- A banner at the top reads "Visite terminée le 12 mars 2026" (date from `closedAt`).
+- All sections remain **editable** so the user can fix mistakes after closing without ceremony — closing is reversible by re-picking any non-`Terminé` status from the sheet, which immediately restores the visit to the active list.
+- The visit no longer appears in `Tous` or any specific-status filter; it appears under `Historique` until reopened.
 
 ### 5.5 Customer Page
 

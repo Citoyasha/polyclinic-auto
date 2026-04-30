@@ -1,7 +1,10 @@
 import { cn } from '@/lib/utils'
 import type { VisitStatus } from '@/types'
 
-export type FilterValue = 'all' | NonNullable<VisitStatus>
+export type FilterValue =
+  | 'all'
+  | 'historique'
+  | Exclude<NonNullable<VisitStatus>, 'termine'>
 
 const ITEMS: { id: FilterValue; label: string }[] = [
   { id: 'all', label: 'Tous' },
@@ -9,6 +12,7 @@ const ITEMS: { id: FilterValue; label: string }[] = [
   { id: 'en_cours', label: 'En cours' },
   { id: 'en_attente_pieces', label: 'Pièces' },
   { id: 'pret', label: 'Prêt' },
+  { id: 'historique', label: 'Historique' },
 ]
 
 export function FilterChips({

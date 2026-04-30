@@ -5,6 +5,7 @@ export type VisitStatus =
   | 'en_cours'
   | 'en_attente_pieces'
   | 'pret'
+  | 'termine'
   | null
 
 export const STATUS_LABELS: Record<NonNullable<VisitStatus>, string> = {
@@ -12,6 +13,7 @@ export const STATUS_LABELS: Record<NonNullable<VisitStatus>, string> = {
   en_cours: 'En cours',
   en_attente_pieces: 'En attente pièces',
   pret: 'Prêt',
+  termine: 'Terminé',
 }
 
 export interface Customer {
@@ -94,10 +96,15 @@ export interface Photo {
 export interface InventoryItem {
   name: string
   type: 'piece' | 'fluide'
+  unit?: string
   currentStock: number
   lowStockThreshold: number
   createdAt: Timestamp
   updatedAt: Timestamp
+}
+
+export function defaultUnitFor(type: 'piece' | 'fluide'): string {
+  return type === 'fluide' ? 'L' : 'u.'
 }
 
 export interface InventoryMovement {
@@ -106,4 +113,12 @@ export interface InventoryMovement {
   note?: string
   createdAt: Timestamp
   userEmail: string
+}
+
+export interface UserProfile {
+  uid: string
+  email: string
+  displayName?: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
 }

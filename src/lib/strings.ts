@@ -2,6 +2,9 @@ export const STR = {
   app: {
     name: 'Garage',
     garageName: 'Atelier El Manar',
+    garageAddress: 'Av. de la République, Tunis',
+    garagePhone: '+216 71 555 100',
+    receiptFooter: 'Document interne — non fiscal',
   },
   auth: {
     signInTitle: 'Se connecter',

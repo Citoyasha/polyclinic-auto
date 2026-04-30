@@ -6,6 +6,7 @@ const DOT_BG: Record<NonNullable<VisitStatus>, string> = {
   en_cours: 'bg-status-en-cours',
   en_attente_pieces: 'bg-status-en-attente-pieces',
   pret: 'bg-status-pret',
+  termine: 'bg-status-termine',
 }
 
 const SIZE: Record<'sm' | 'md', string> = {

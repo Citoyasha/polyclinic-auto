@@ -29,16 +29,18 @@ function matchesQuery(visit: VisitWithId, q: string): boolean {
 }
 
 function matchesFilter(visit: VisitWithId, f: FilterValue): boolean {
-  if (f === 'all') return true
+  if (f === 'all' || f === 'historique') return true
   return visit.status === f
 }
 
 export default function Home() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { visits, loading, error } = useCars()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterValue>('all')
+  const { visits, loading, error } = useCars(
+    filter === 'historique' ? 'history' : 'active',
+  )
   const [sheetOpen, setSheetOpen] = useState(false)
 
   const filtered = useMemo(
@@ -93,7 +95,7 @@ export default function Home() {
           </div>
         )}
 
-        {showEmptyDb && <EmptyState />}
+        {showEmptyDb && <EmptyState historique={filter === 'historique'} />}
 
         {showNoResult && (
           <p className="mt-12 text-center text-[14px] text-fg-muted">
@@ -126,17 +128,19 @@ export default function Home() {
   )
 }
 
-function EmptyState() {
+function EmptyState({ historique }: { historique: boolean }) {
   return (
     <div className="mt-16 flex flex-col items-center justify-center px-10 text-center text-fg-muted">
       <div className="mb-4">
         <CarThumb size={72} />
       </div>
       <div className="mb-1.5 text-[15px] font-medium text-fg">
-        Aucune voiture
+        {historique ? 'Aucune visite terminée' : 'Aucune voiture'}
       </div>
       <div className="max-w-[240px] text-[13.5px] leading-[1.5]">
-        Touchez + pour démarrer une nouvelle visite.
+        {historique
+          ? "Les visites marquées « Terminé » apparaîtront ici."
+          : 'Touchez + pour démarrer une nouvelle visite.'}
       </div>
     </div>
   )
