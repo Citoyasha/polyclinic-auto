@@ -1,8 +1,8 @@
 export const STR = {
   app: {
-    name: 'Garage',
-    garageName: 'Atelier El Manar',
-    garageAddress: 'Av. de la République, Tunis',
+    name: 'Polyclinique Auto',
+    garageName: 'Polyclinique Auto Hatem',
+    garageAddress: 'Hay Tahrir',
     garagePhone: '+216 71 555 100',
     receiptFooter: 'Document interne — non fiscal',
   },
