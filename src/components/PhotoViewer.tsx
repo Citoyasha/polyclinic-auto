@@ -2,7 +2,15 @@ import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { deletePhoto, updatePhotoTag } from '@/lib/mutations'
+import type { PhotoTag } from '@/types'
 import type { PhotoWithId } from '@/hooks/usePhotos'
+
+const TAG_CYCLE: PhotoTag[] = ['avant', 'apres', 'recu']
+const TAG_LABEL: Record<PhotoTag, string> = {
+  avant: 'Avant',
+  apres: 'Après',
+  recu: 'Reçu',
+}
 
 export function PhotoViewer({
   visitId,
@@ -35,15 +43,23 @@ export function PhotoViewer({
   const next = () => setIndex((i) => Math.min(photos.length - 1, i + 1))
 
   const onToggleTag = async () => {
-    const nextTag = photo.tag === 'avant' ? 'apres' : 'avant'
+    const currentIndex = TAG_CYCLE.indexOf(photo.tag)
+    const nextTag =
+      TAG_CYCLE[(currentIndex + 1) % TAG_CYCLE.length] ?? 'avant'
     try {
       await updatePhotoTag(visitId, photo.id, nextTag)
-      toast.success(nextTag === 'avant' ? 'Marqué Avant' : 'Marqué Après')
+      toast.success(`Marqué ${TAG_LABEL[nextTag]}`)
     } catch (err) {
       console.error(err)
       toast.error('Erreur de synchronisation')
     }
   }
+
+  const nextTagLabel =
+    TAG_LABEL[
+      TAG_CYCLE[(TAG_CYCLE.indexOf(photo.tag) + 1) % TAG_CYCLE.length] ??
+        'avant'
+    ]
 
   const onDelete = async () => {
     try {
@@ -99,7 +115,7 @@ export function PhotoViewer({
           disabled={disabled}
           className="rounded-full bg-white/15 px-5 py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
         >
-          {photo.tag === 'avant' ? 'Marquer Après' : 'Marquer Avant'}
+          Marquer {nextTagLabel}
         </button>
         <button
           type="button"

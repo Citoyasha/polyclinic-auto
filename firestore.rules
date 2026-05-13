@@ -41,5 +41,11 @@ service cloud.firestore {
     match /users/{uid} {
       allow read, write: if isAuth();
     }
+
+    // /mechanics is the free-text roster used by the visit assignee
+    // picker. Anyone authenticated can add a mechanic.
+    match /mechanics/{mechanicId} {
+      allow read, write: if isAuth();
+    }
   }
 }

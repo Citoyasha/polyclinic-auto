@@ -56,6 +56,7 @@ export interface Visit {
   customerId: string
   status?: VisitStatus
   summary: string
+  notes?: string
   isClosed: boolean
   arrivedAt: Timestamp
   closedAt?: Timestamp | null
@@ -63,6 +64,9 @@ export interface Visit {
   carSnapshot: CarSnapshot
   customerSnapshot: CustomerSnapshot
   total: number
+  cashAdvance?: number
+  assigneeMechanicId?: string | null
+  assigneeName?: string | null
 }
 
 export interface Task {
@@ -83,10 +87,12 @@ export interface LineItem {
   order: number
 }
 
+export type PhotoTag = 'avant' | 'apres' | 'recu'
+
 export interface Photo {
   url: string
   publicId: string
-  tag: 'avant' | 'apres'
+  tag: PhotoTag
   uploadedAt: Timestamp
   width: number
   height: number
@@ -119,6 +125,12 @@ export interface UserProfile {
   uid: string
   email: string
   displayName?: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+export interface Mechanic {
+  name: string
   createdAt: Timestamp
   updatedAt: Timestamp
 }

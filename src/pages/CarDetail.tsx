@@ -12,6 +12,9 @@ import {
   addTask,
   deleteLineItem,
   deleteTask,
+  setVisitAssignee,
+  setVisitCashAdvance,
+  setVisitNotes,
   setVisitStatus,
   setVisitSummary,
   updateLineItem,
@@ -23,6 +26,9 @@ import { StatusChip } from '@/components/StatusChip'
 import { SectionLabel } from '@/components/Eyebrow'
 import { StatusEditSheet } from '@/components/StatusEditSheet'
 import { SummaryField } from '@/components/SummaryField'
+import { NotesField } from '@/components/NotesField'
+import { CashAdvanceField } from '@/components/CashAdvanceField'
+import { AssigneePickerSheet } from '@/components/AssigneePickerSheet'
 import { TaskList } from '@/components/TaskList'
 import { TaskEditSheet, type TaskEditDraft } from '@/components/TaskEditSheet'
 import {
@@ -60,6 +66,7 @@ export default function CarDetail() {
   const [editCarOpen, setEditCarOpen] = useState(false)
   const [editCustomerOpen, setEditCustomerOpen] = useState(false)
   const [deleteCarOpen, setDeleteCarOpen] = useState(false)
+  const [assigneeOpen, setAssigneeOpen] = useState(false)
 
   const onMenuAction = (action: CarMenuAction) => {
     setMenuOpen(false)
@@ -95,6 +102,42 @@ export default function CarDetail() {
       if (next === 'termine') {
         toast.success('Visite déplacée dans l’historique')
       }
+    } catch (err) {
+      console.error(err)
+      toast.error('Erreur de synchronisation')
+    }
+  }
+
+  const onSaveNotes = async (next: string) => {
+    if (!visit) return
+    try {
+      await setVisitNotes(visit.id, next)
+    } catch (err) {
+      console.error(err)
+      toast.error('Erreur de synchronisation')
+    }
+  }
+
+  const onSaveCashAdvance = async (next: number) => {
+    if (!visit) return
+    try {
+      await setVisitCashAdvance(visit.id, next)
+    } catch (err) {
+      console.error(err)
+      toast.error('Erreur de synchronisation')
+    }
+  }
+
+  const onSelectAssignee = async (
+    mechanic: { id: string; name: string } | null,
+  ) => {
+    if (!visit) return
+    try {
+      await setVisitAssignee(
+        visit.id,
+        mechanic?.id ?? null,
+        mechanic?.name ?? null,
+      )
     } catch (err) {
       console.error(err)
       toast.error('Erreur de synchronisation')
@@ -238,6 +281,12 @@ export default function CarDetail() {
   const customerPhone = visit?.customerSnapshot.phone ?? ''
   const status = visit?.status ?? null
   const summary = visit?.summary ?? ''
+  const notes = visit?.notes ?? ''
+  const cashAdvance = visit?.cashAdvance ?? 0
+  const assigneeName = visit?.assigneeName ?? null
+  const assigneeMechanicId = visit?.assigneeMechanicId ?? null
+  const remaining = Math.max(0, grandTotal - cashAdvance)
+  const showPaymentChip = status === 'pret' && grandTotal > 0
   const plateValue = car?.rawPlate || (plate ? plate : '')
 
   return (
@@ -320,7 +369,7 @@ export default function CarDetail() {
             {isTerminated && <ClosedVisitBanner closedAt={visit.closedAt} />}
 
             {/* Status row */}
-            <div className="flex items-center gap-2.5 px-6 pb-3.5 pt-4">
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 px-6 pb-1.5 pt-4">
               <span className="text-[13px] font-medium text-fg-muted">
                 Statut
               </span>
@@ -334,6 +383,49 @@ export default function CarDetail() {
                 ) : (
                   <span className="rounded-full border border-dashed border-border px-3 py-[5px] text-[13px] text-fg-muted">
                     Aucun
+                  </span>
+                )}
+                <ChevronDown size={16} strokeWidth={1.8} className="text-fg-muted" />
+              </button>
+              {showPaymentChip && (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-[5px] text-[12.5px] font-semibold"
+                  style={
+                    remaining > 0
+                      ? {
+                          background: 'rgba(217, 119, 6, 0.12)',
+                          color: '#b45309',
+                        }
+                      : {
+                          background: 'rgba(22, 163, 74, 0.12)',
+                          color: '#15803d',
+                        }
+                  }
+                >
+                  {remaining > 0
+                    ? `Reste à payer ${remaining} TND`
+                    : 'Payé'}
+                </span>
+              )}
+            </div>
+
+            {/* Assignee row */}
+            <div className="flex items-center gap-2.5 px-6 pb-3.5 pt-2">
+              <span className="text-[13px] font-medium text-fg-muted">
+                Mécanicien
+              </span>
+              <button
+                type="button"
+                onClick={() => setAssigneeOpen(true)}
+                className="inline-flex items-center gap-1.5"
+              >
+                {assigneeName ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-[5px] text-[13px] font-medium text-accent">
+                    {assigneeName}
+                  </span>
+                ) : (
+                  <span className="rounded-full border border-dashed border-border px-3 py-[5px] text-[13px] text-fg-muted">
+                    Personne
                   </span>
                 )}
                 <ChevronDown size={16} strokeWidth={1.8} className="text-fg-muted" />
@@ -374,6 +466,39 @@ export default function CarDetail() {
                 onTap={(it) => setEditingLine(it)}
                 onDelete={onDeleteLineRow}
               />
+            </div>
+
+            {/* Paiement */}
+            <div className="px-5 pb-1.5 pt-3.5">
+              <SectionLabel>Paiement</SectionLabel>
+              <div className="overflow-hidden rounded-xl border border-border bg-surface">
+                <div className="flex items-center justify-between gap-3 border-b border-border-soft px-3.5 py-2.5">
+                  <span className="text-[13.5px] text-fg-muted">Avance reçue</span>
+                  <div className="w-[160px]">
+                    <CashAdvanceField
+                      value={cashAdvance}
+                      onSave={onSaveCashAdvance}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between px-3.5 py-3">
+                  <span className="text-[13.5px] text-fg-muted">
+                    Reste à payer
+                  </span>
+                  <span
+                    className="font-mono text-[16px] font-semibold"
+                    style={{ color: remaining > 0 ? '#b45309' : 'var(--color-fg)' }}
+                  >
+                    {remaining} <span className="text-[12px] font-medium text-fg-muted">TND</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="px-5 pb-1.5 pt-3.5">
+              <SectionLabel>Notes</SectionLabel>
+              <NotesField value={notes} onSave={onSaveNotes} />
             </div>
 
             <div className="h-6" />
@@ -458,6 +583,15 @@ export default function CarDetail() {
         onOpenChange={setDeleteCarOpen}
         plate={car?.plate ?? plate}
         onDeleted={() => navigate('/', { replace: true })}
+      />
+
+      <AssigneePickerSheet
+        open={assigneeOpen}
+        onOpenChange={setAssigneeOpen}
+        currentMechanicId={assigneeMechanicId}
+        onSelect={(m) =>
+          onSelectAssignee(m ? { id: m.id, name: m.name } : null)
+        }
       />
     </div>
   )

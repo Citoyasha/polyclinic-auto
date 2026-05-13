@@ -1,6 +1,7 @@
 import imageCompression from 'browser-image-compression'
 import { uploadToCloudinary } from '@/lib/cloudinary'
 import { addPhoto } from '@/lib/mutations'
+import type { PhotoTag } from '@/types'
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -59,7 +60,7 @@ async function compressIfHelpful(file: File): Promise<Blob> {
 export async function uploadPhotoForVisit(
   file: File,
   visitId: string,
-  tag: 'avant' | 'apres',
+  tag: PhotoTag,
 ): Promise<string> {
   console.log('[photoUpload] start', {
     name: file.name,

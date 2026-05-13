@@ -111,6 +111,15 @@ export function buildReceiptDoc(data: ReceiptData): TDocumentDefinitions {
             ...(carLine
               ? [{ text: carLine, style: 'metaValue', margin: [0, 4, 0, 0] as [number, number, number, number] }]
               : []),
+            ...(visit.assigneeName
+              ? [
+                  {
+                    text: `Mécanicien : ${visit.assigneeName}`,
+                    style: 'metaValue',
+                    margin: [0, 4, 0, 0] as [number, number, number, number],
+                  },
+                ]
+              : []),
           ],
         },
       ],
@@ -193,6 +202,36 @@ export function buildReceiptDoc(data: ReceiptData): TDocumentDefinitions {
     ],
     margin: [0, 18, 0, 0],
   })
+
+  // Payment (advance + remaining)
+  const cashAdvance = visit.cashAdvance ?? 0
+  if (cashAdvance > 0) {
+    const remaining = Math.max(0, grandTotal - cashAdvance)
+    content.push({
+      stack: [
+        {
+          columns: [
+            { text: 'Avance reçue', style: 'subtotalLabel' },
+            { text: `${cashAdvance} TND`, style: 'subtotalValue', alignment: 'right' },
+          ],
+          margin: [0, 0, 0, 4],
+        },
+        {
+          columns: [
+            { text: 'Reste à payer', style: 'subtotalLabel', bold: true },
+            {
+              text: `${remaining} TND`,
+              style: 'subtotalValue',
+              alignment: 'right',
+              bold: true,
+              color: remaining > 0 ? '#b45309' : '#15803d',
+            },
+          ],
+        },
+      ],
+      margin: [0, 10, 0, 0],
+    })
+  }
 
   // Notes / résumé
   if (visit.summary?.trim()) {

@@ -52,6 +52,8 @@ export default function Receipt() {
     0,
   )
   const grandTotal = tasksTotal + linesTotal
+  const cashAdvance = visit?.cashAdvance ?? 0
+  const remaining = Math.max(0, grandTotal - cashAdvance)
 
   const [pdfBusy, setPdfBusy] = useState(false)
   const [shareBusy, setShareBusy] = useState(false)
@@ -217,6 +219,11 @@ export default function Receipt() {
                       .join(' · ')}
                   </div>
                 )}
+                {visit.assigneeName && (
+                  <div className="mt-1.5 text-[12.5px] text-fg-muted">
+                    Mécanicien : <span dir="auto">{visit.assigneeName}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -297,6 +304,23 @@ export default function Receipt() {
                 </span>
               </span>
             </div>
+
+            {/* Payment */}
+            {cashAdvance > 0 && (
+              <div className="mt-2 border-t border-dashed border-border-soft pt-2 text-[13px]">
+                <div className="flex justify-between py-0.5 text-fg-muted">
+                  <span>Avance reçue</span>
+                  <span className="font-mono">{cashAdvance} TND</span>
+                </div>
+                <div
+                  className="flex justify-between py-0.5 font-semibold"
+                  style={{ color: remaining > 0 ? '#b45309' : '#15803d' }}
+                >
+                  <span>Reste à payer</span>
+                  <span className="font-mono">{remaining} TND</span>
+                </div>
+              </div>
+            )}
 
             {/* Notes */}
             {visit.summary?.trim() && (

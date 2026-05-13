@@ -19,6 +19,7 @@ import type {
   CarSnapshot,
   Customer,
   CustomerSnapshot,
+  PhotoTag,
   Visit,
   VisitStatus,
 } from '@/types'
@@ -206,6 +207,52 @@ export async function setVisitSummary(
   })
 }
 
+export async function setVisitNotes(
+  visitId: string,
+  notes: string,
+): Promise<void> {
+  await updateDoc(doc(db, 'visits', visitId), {
+    notes,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function setVisitCashAdvance(
+  visitId: string,
+  cashAdvance: number,
+): Promise<void> {
+  await updateDoc(doc(db, 'visits', visitId), {
+    cashAdvance,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function setVisitAssignee(
+  visitId: string,
+  mechanicId: string | null,
+  mechanicName: string | null,
+): Promise<void> {
+  await updateDoc(doc(db, 'visits', visitId), {
+    assigneeMechanicId: mechanicId,
+    assigneeName: mechanicName,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function createMechanic(name: string): Promise<string> {
+  const ref = doc(collection(db, 'mechanics'))
+  await setDoc(ref, {
+    name: name.trim(),
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
+  return ref.id
+}
+
+export async function deleteMechanic(mechanicId: string): Promise<void> {
+  await deleteDoc(doc(db, 'mechanics', mechanicId))
+}
+
 export interface AddTaskInput {
   visitId: string
   description: string
@@ -338,7 +385,7 @@ export interface AddPhotoInput {
   visitId: string
   url: string
   publicId: string
-  tag: 'avant' | 'apres'
+  tag: PhotoTag
   width: number
   height: number
   sizeBytes: number
@@ -364,7 +411,7 @@ export async function addPhoto(input: AddPhotoInput): Promise<string> {
 export async function updatePhotoTag(
   visitId: string,
   photoId: string,
-  tag: 'avant' | 'apres',
+  tag: PhotoTag,
 ): Promise<void> {
   await updateDoc(doc(db, 'visits', visitId, 'photos', photoId), { tag })
   await updateDoc(doc(db, 'visits', visitId), {

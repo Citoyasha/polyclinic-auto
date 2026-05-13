@@ -4,14 +4,25 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { uploadPhotoForVisit } from '@/lib/photoUpload'
 import { PhotoViewer } from '@/components/PhotoViewer'
+import type { PhotoTag } from '@/types'
 import type { PhotoWithId } from '@/hooks/usePhotos'
 
-type Tab = 'avant' | 'apres'
+const TABS: { id: PhotoTag; label: string; short: string }[] = [
+  { id: 'avant', label: 'Avant', short: 'AV' },
+  { id: 'apres', label: 'Après', short: 'AP' },
+  { id: 'recu', label: 'Reçus', short: 'RC' },
+]
+
+const SHORT_BY_TAG: Record<PhotoTag, string> = {
+  avant: 'AV',
+  apres: 'AP',
+  recu: 'RC',
+}
 
 interface PendingUpload {
   id: string
   blobUrl: string
-  tag: Tab
+  tag: PhotoTag
 }
 
 const PLACEHOLDER_TILES = 3
@@ -25,7 +36,7 @@ export function PhotoSection({
   photos: PhotoWithId[]
   disabled?: boolean
 }) {
-  const [tab, setTab] = useState<Tab>('avant')
+  const [tab, setTab] = useState<PhotoTag>('avant')
   const [pending, setPending] = useState<PendingUpload[]>([])
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
@@ -87,19 +98,19 @@ export function PhotoSection({
   return (
     <div>
       <div className="flex gap-6 border-b border-border-soft">
-        {(['avant', 'apres'] as Tab[]).map((t) => (
+        {TABS.map(({ id, label }) => (
           <button
-            key={t}
+            key={id}
             type="button"
-            onClick={() => setTab(t)}
+            onClick={() => setTab(id)}
             className={cn(
               '-mb-px border-b-2 pb-2.5 text-[14px] font-semibold transition-colors',
-              tab === t
+              tab === id
                 ? 'border-accent text-fg'
                 : 'border-transparent text-fg-muted',
             )}
           >
-            {t === 'avant' ? 'Avant' : 'Après'}
+            {label}
           </button>
         ))}
       </div>
@@ -119,7 +130,7 @@ export function PhotoSection({
               loading="lazy"
             />
             <span className="absolute right-1.5 top-1.5 rounded bg-black/55 px-1.5 py-[1px] text-[9px] font-semibold uppercase tracking-[0.5px] text-white">
-              {photo.tag === 'avant' ? 'AV' : 'AP'}
+              {SHORT_BY_TAG[photo.tag]}
             </span>
           </button>
         ))}
